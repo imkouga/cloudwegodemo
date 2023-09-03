@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package pkg.database.redis;
+
+option go_package = "cloudwegodemo/pkg/database/redis";
+
+import "google/protobuf/duration.proto";
+
+message Option {
+    string dsn = 1;
+    int32 max_open_conns = 2;
+    int32 max_idle_conns = 3;
+    google.protobuf.Duration conn_max_idle_time = 4;
+    google.protobuf.Duration conn_max_life_time = 5;
+}

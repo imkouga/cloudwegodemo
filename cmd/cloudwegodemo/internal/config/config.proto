@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package cmd.hz.internal.config;
+
+option go_package = "cloudwegodemo/cmd/cloudwegodemo/internal/config";
+
+import "cmd/cloudwegodemo/internal/server/server.proto";
+import "pkg/database/mysql/mysql.proto";
+import "pkg/database/redis/redis.proto";
+
+message Config {
+    Server server = 1;
+}
+
+message Server {
+    cmd.cloudwegodemo.internal.server.HTTPServer http = 1;
+    cmd.cloudwegodemo.internal.server.RPCServer rpc = 2;
+    DataBase database = 3;
+}
+
+message DataBase {
+    pkg.database.mysql.Option mysql = 1;
+    pkg.database.redis.Option redis = 2;
+}
