@@ -13,19 +13,28 @@ import (
 	"cloudwegodemo/cmd/cloudwegodemo/internal/server"
 	"cloudwegodemo/pkg/configor"
 	"cloudwegodemo/pkg/database/mysql"
+	"cloudwegodemo/pkg/database/redis"
 )
 
 // Injectors from wire.go:
 
 // wireApp init application.
 func wireApp(option *configor.Option) (*APP, func(), error) {
-	configorConfigor := config.NewGlobalConfigor(option)
+	configorConfigor, err := config.NewGlobalConfigor(option)
+	if err != nil {
+		return nil, nil, err
+	}
 	getOptionFn := config.GetMySQLOptionFn()
 	mySQL, err := mysql.NewMySQLPool(configorConfigor, getOptionFn)
 	if err != nil {
 		return nil, nil, err
 	}
-	repoSet, err := repo.NewRepoSet(mySQL)
+	redisGetOptionFn := config.GetRedisOptionFn()
+	redisRedis, err := redis.NewRedisPool(configorConfigor, redisGetOptionFn)
+	if err != nil {
+		return nil, nil, err
+	}
+	repoSet, err := repo.NewRepoSet(mySQL, redisRedis)
 	if err != nil {
 		return nil, nil, err
 	}

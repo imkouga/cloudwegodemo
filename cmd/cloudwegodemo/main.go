@@ -63,7 +63,7 @@ func runAPP(app *APP) error {
 	return nil
 }
 
-func newApp(c *configor.Configor, repoSet *repo.RepoSet, bizSet *biz.BizSet, h *server.Hertz) (*APP, func(), error) {
+func newApp(c configor.Configor, repoSet *repo.RepoSet, bizSet *biz.BizSet, h *server.Hertz) (*APP, func(), error) {
 	return &APP{
 		httpServer: h,
 		bizSet:     bizSet,
@@ -85,7 +85,7 @@ func main() {
 	}
 
 	app, cancel, err := wireApp(&configor.Option{
-		Paths: nil,
+		Paths: []string{cfgPath},
 	})
 	if nil != err {
 		hlog.Fatal(err)

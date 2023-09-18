@@ -12,9 +12,14 @@ database:
     conn_max_idle_time: 10m
     conn_max_life_time: 30m
   redis:
-    dsn: xxxx
-    max_open_conns: 100
+redis:
+    addr: 172.18.154.56:6379
+    password:
+    db: 0
     max_idle_conns: 10
-    conn_max_idle_time: 10m
-    conn_max_life_time: 30m
+    min_idle_conns: 1
+    conn_max_idle_time:
+      seconds: 300
+    conn_max_life_time:
+      seconds: 100
 

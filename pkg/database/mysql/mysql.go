@@ -2,27 +2,37 @@ package mysql
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 
 	"cloudwegodemo/pkg/configor"
 
+	"github.com/cloudwego/hertz/pkg/common/hlog"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	gormLogger "gorm.io/gorm/logger"
 )
 
-type GetOptionFn func() (*Option, error)
+type (
+	GetOptionFn  func() (*Option, error)
+	contextTxKey struct{}
+	MySQL        struct {
+		db *gorm.DB
 
-type contextTxKey struct{}
+		opt   *Option
+		optFn GetOptionFn
+	}
+	Option struct {
+		Dsn             string               `json:"dsn,omitempty" yaml:"dsn,omitempty"`
+		MaxOpenConns    int64                `json:"max_open_conns,omitempty" yaml:"max_open_conns,omitempty"`
+		MaxIdleConns    int64                `json:"max_idle_conns,omitempty" yaml:"max_idle_conns,omitempty"`
+		ConnMaxIdleTime *durationpb.Duration `json:"conn_max_idle_time,omitempty" yaml:"conn_max_idle_time,omitempty"`
+		ConnMaxLifeTime *durationpb.Duration `json:"conn_max_life_time,omitempty" yaml:"conn_max_life_time,omitempty"`
+	}
+)
 
-type MySQL struct {
-	db *gorm.DB
-
-	opt   *Option
-	optFn GetOptionFn
-}
-
-func NewMySQLPool(cr *configor.Configor, optFn GetOptionFn) (*MySQL, error) {
+func NewMySQLPool(cr configor.Configor, optFn GetOptionFn) (*MySQL, error) {
 
 	if nil == optFn {
 		return nil, errors.New("获取MySQL配置信息失败")
@@ -39,7 +49,9 @@ func NewMySQLPool(cr *configor.Configor, optFn GetOptionFn) (*MySQL, error) {
 	mysqlDB := &MySQL{db: db, opt: opt, optFn: optFn}
 
 	if nil != cr {
-		cr.RegisterReload(mysqlDB.reload)
+		if err := cr.RegisterReload("MySQL", mysqlDB.reload); nil != err {
+			return nil, err
+		}
 	}
 
 	return mysqlDB, nil
@@ -61,6 +73,7 @@ func NewGorm(opt *Option) (*gorm.DB, error) {
 		DisableDatetimePrecision: true,
 		DontSupportRenameIndex:   true,
 	})
+	hlog.Infof("mysql dsn is %s", opt.Dsn)
 
 	conn, err := gorm.Open(driver, opts)
 	if err != nil {
@@ -83,30 +96,36 @@ func (d *MySQL) init() error {
 	if nil != err {
 		return err
 	}
-	db.SetConnMaxIdleTime(d.opt.GetConnMaxIdleTime().AsDuration())
-	db.SetConnMaxLifetime(d.opt.GetConnMaxLifeTime().AsDuration())
-	db.SetMaxIdleConns(int(d.opt.GetMaxIdleConns()))
-	db.SetMaxOpenConns(int(d.opt.GetMaxOpenConns()))
-	return nil
+	return initDB(db, d.opt)
 }
 
-func (d *MySQL) reload() {
+func (d *MySQL) reload() error {
 
 	if nil == d || nil == d.optFn {
-		return
+		return nil
 	}
 
 	opt, err := d.optFn()
 	if nil != err {
-		return
+		return err
 	}
-	db, err := NewGorm(opt)
+	gdb, err := NewGorm(opt)
 	if nil != err {
-		return
+		hlog.Error(err)
+		return err
 	}
-	d.db, d.opt = db, opt
+	db, err := gdb.DB()
+	if nil != err {
+		hlog.Error(err)
+		return err
+	}
+	if err := initDB(db, opt); nil != err {
+		hlog.Error(err)
+		return err
+	}
 
-	_ = d.init()
+	d.db, d.opt = gdb, opt
+	return nil
 }
 
 // ExecTx gorm Transaction
@@ -125,4 +144,17 @@ func (d *MySQL) DB(ctx context.Context) *gorm.DB {
 		return d.db
 	}
 	return tx
+}
+
+func initDB(db *sql.DB, opt *Option) error {
+
+	if nil == db || nil == opt {
+		return nil
+	}
+
+	db.SetConnMaxIdleTime(opt.ConnMaxIdleTime.AsDuration())
+	db.SetConnMaxLifetime(opt.ConnMaxLifeTime.AsDuration())
+	db.SetMaxIdleConns(int(opt.MaxIdleConns))
+	db.SetMaxOpenConns(int(opt.MaxOpenConns))
+	return nil
 }
