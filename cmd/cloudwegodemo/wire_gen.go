@@ -34,11 +34,11 @@ func wireApp(option *configor.Option) (*APP, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	repoSet, err := repo.NewRepoSet(mySQL, redisRedis)
+	baseRepo, err := repo.NewBaseRepo(mySQL, redisRedis)
 	if err != nil {
 		return nil, nil, err
 	}
-	bizSet, err := biz.NewBizSet()
+	baseBiz, err := biz.NewBaseBiz(baseRepo)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -47,7 +47,7 @@ func wireApp(option *configor.Option) (*APP, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	app, cleanup, err := newApp(configorConfigor, repoSet, bizSet, hertz)
+	app, cleanup, err := newApp(configorConfigor, baseBiz, hertz)
 	if err != nil {
 		return nil, nil, err
 	}

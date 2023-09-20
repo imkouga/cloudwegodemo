@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"cloudwegodemo/cmd/cloudwegodemo/internal/biz"
-	"cloudwegodemo/cmd/cloudwegodemo/internal/repo"
 	"cloudwegodemo/cmd/cloudwegodemo/internal/router"
 	"cloudwegodemo/pkg/configor"
 	"cloudwegodemo/pkg/logger"
@@ -24,8 +23,7 @@ var (
 
 type APP struct {
 	httpServer *server.Hertz
-	bizSet     *biz.BizSet
-	repoSet    *repo.RepoSet
+	bizSet     *biz.BaseBiz
 }
 
 func init() {
@@ -48,9 +46,6 @@ func initInspect() error {
 
 func initAPP(app *APP) error {
 
-	if err := app.repoSet.Init(); nil != err {
-		return err
-	}
 	if err := app.bizSet.Init(); nil != err {
 		return err
 	}
@@ -63,11 +58,10 @@ func runAPP(app *APP) error {
 	return nil
 }
 
-func newApp(c configor.Configor, repoSet *repo.RepoSet, bizSet *biz.BizSet, h *server.Hertz) (*APP, func(), error) {
+func newApp(c configor.Configor, bizSet *biz.BaseBiz, h *server.Hertz) (*APP, func(), error) {
 	return &APP{
 		httpServer: h,
 		bizSet:     bizSet,
-		repoSet:    repoSet,
 	}, func() {}, nil
 }
 

@@ -9,23 +9,29 @@ import (
 )
 
 var (
-	RepoProvider = wire.NewSet(NewRepoSet)
+	RepoProvider = wire.NewSet(NewBaseRepo)
 )
 
 type (
-	RepoSet struct {
+	BaseRepo interface {
 		pkg.Base
-
+	}
+	baseRepo struct {
 		mysqlDB *mysql.MySQL
 		rdb     *redis.Redis
 	}
 )
 
-func NewRepoSet(mysqlDB *mysql.MySQL, rdb *redis.Redis) (*RepoSet, error) {
-	return &RepoSet{mysqlDB: mysqlDB, rdb: rdb}, nil
+func NewBaseRepo(mysqlDB *mysql.MySQL, rdb *redis.Redis) (BaseRepo, error) {
+
+	r := &baseRepo{mysqlDB: mysqlDB, rdb: rdb}
+	if err := r.Init(); nil != err {
+		return nil, err
+	}
+	return r, nil
 }
 
-func (r *RepoSet) Init() error {
+func (r *baseRepo) Init() error {
 
 	if err := r.mysqlDB.Init(); nil != err {
 		return err
