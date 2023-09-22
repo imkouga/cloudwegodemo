@@ -6,7 +6,11 @@ import (
 
 	"cloudwegodemo/cmd/cloudwegodemo/internal/biz"
 	"cloudwegodemo/cmd/cloudwegodemo/internal/router"
+	"cloudwegodemo/pkg"
+
+	"cloudwegodemo/pkg/bootstrap"
 	"cloudwegodemo/pkg/configor"
+	"cloudwegodemo/pkg/contrib/registry"
 	"cloudwegodemo/pkg/logger"
 
 	"github.com/cloudwego/hertz/pkg/app/server"
@@ -15,16 +19,11 @@ import (
 
 var (
 	Version     = "v1.0.0"
-	ServerName  = "cloudwegodemo"
+	ServiceName = "cloudwegodemo"
 	LogLevel    int
 	HostName, _ = os.Hostname()
 	cfgPath     string
 )
-
-type APP struct {
-	httpServer *server.Hertz
-	bizSet     *biz.BaseBiz
-}
 
 func init() {
 	flag.StringVar(&cfgPath, "conf", "../../etc", "config path, eg: -conf config.yaml")
@@ -35,7 +34,7 @@ func init() {
 func initLogger() error {
 	return logger.Init(
 		logger.WithLevel(hlog.Level(LogLevel)),
-		logger.WithServiceAbstract(ServerName, Version, HostName),
+		logger.WithServiceAbstract(ServiceName, Version, HostName),
 	)
 }
 
@@ -44,25 +43,23 @@ func initInspect() error {
 	return nil
 }
 
-func initAPP(app *APP) error {
+func newApp(c configor.Configor, h *server.Hertz, r registry.Registry, bizSet *biz.BaseBiz) (*bootstrap.APP, func(), error) {
 
-	if err := app.bizSet.Init(); nil != err {
-		return err
-	}
-	return nil
-}
+	app := bootstrap.New(
+		bootstrap.WithName(ServiceName),
+		bootstrap.WithVersion(Version),
 
-func runAPP(app *APP) error {
-	router.GeneratedRegister(app.httpServer)
-	app.httpServer.Spin()
-	return nil
-}
+		bootstrap.WithConfigor(c),
 
-func newApp(c configor.Configor, bizSet *biz.BaseBiz, h *server.Hertz) (*APP, func(), error) {
-	return &APP{
-		httpServer: h,
-		bizSet:     bizSet,
-	}, func() {}, nil
+		bootstrap.WithRouteRegister(router.GeneratedRegister),
+		bootstrap.WithHertz(h),
+
+		bootstrap.WithRegistry(r),
+
+		bootstrap.WithBase(bizSet),
+	)
+
+	return app, func() {}, nil
 }
 
 func main() {
@@ -78,7 +75,7 @@ func main() {
 		}
 	}
 
-	app, cancel, err := wireApp(&configor.Option{
+	app, cancel, err := wireApp(pkg.ServiceName(ServiceName), &configor.Option{
 		Paths: []string{cfgPath},
 	})
 	if nil != err {
@@ -86,10 +83,10 @@ func main() {
 	}
 	defer cancel()
 
-	if err := initAPP(app); nil != err {
+	if err := app.Init(); nil != err {
 		hlog.Fatal(err)
 	}
-	if err := runAPP(app); nil != err {
+	if err := app.Run(); nil != err {
 		hlog.Fatal(err)
 	}
 }

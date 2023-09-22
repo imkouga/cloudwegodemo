@@ -1,8 +1,9 @@
 package config
 
 import (
-	"cloudwegodemo/cmd/cloudwegodemo/internal/server"
+	"cloudwegodemo/internal/server"
 	"cloudwegodemo/pkg/configor"
+	"cloudwegodemo/pkg/contrib/registry"
 	"cloudwegodemo/pkg/database/mysql"
 	redis "cloudwegodemo/pkg/database/redis"
 
@@ -12,16 +13,17 @@ import (
 var (
 	globalC *Config
 )
-var ConfigProvider = wire.NewSet(NewGlobalConfigor, GetHTTPServerOptionFn, GetMySQLOptionFn, GetRedisOptionFn)
+var ConfigProvider = wire.NewSet(NewGlobalConfigor, GetHTTPServerOptionFn, GetRegistryOptionFn, GetMySQLOptionFn, GetRedisOptionFn)
 
 type (
 	Config struct {
-		Server   *Server   `json:"server,omitempty" yaml:"server,omitempty"`
-		Database *DataBase `json:"database,omitempty" yaml:"database,omitempty"`
+		Server   *Server          `json:"server,omitempty" yaml:"server,omitempty"`
+		Database *DataBase        `json:"database,omitempty" yaml:"database,omitempty"`
+		Registry *registry.Option `json:"registry,omitempty" yaml:"registry,omitempty"`
 	}
 	Server struct {
-		Http *server.HTTPServer `json:"http,omitempty" yaml:"http,omitempty"`
-		Rpc  *server.RPCServer  `json:"rpc,omitempty" yaml:"rpc,omitempty"`
+		Http *server.HTTPOption `json:"http,omitempty" yaml:"http,omitempty"`
+		Rpc  *server.RPCOption  `json:"rpc,omitempty" yaml:"rpc,omitempty"`
 	}
 	DataBase struct {
 		Mysql *mysql.Option `json:"mysql,omitempty" yaml:"mysql,omitempty"`
@@ -50,7 +52,7 @@ func GetHTTPServerOptionFn() server.GetHTTPServerOption {
 	return GetHTTPServerOption
 }
 
-func GetHTTPServerOption() (*server.HTTPServer, error) {
+func GetHTTPServerOption() (*server.HTTPOption, error) {
 	return globalC.Server.Http, nil
 }
 
@@ -68,4 +70,12 @@ func GetRedisOptionFn() redis.GetOptionFn {
 
 func GetRedisOption() (*redis.Option, error) {
 	return globalC.Database.Redis, nil
+}
+
+func GetRegistryOptionFn() registry.GetRegistryOption {
+	return GetRegistryOption
+}
+
+func GetRegistryOption() (*registry.Option, error) {
+	return globalC.Registry, nil
 }

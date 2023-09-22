@@ -8,15 +8,23 @@ import (
 	"cloudwegodemo/cmd/cloudwegodemo/internal/biz"
 	"cloudwegodemo/cmd/cloudwegodemo/internal/config"
 	"cloudwegodemo/cmd/cloudwegodemo/internal/repo"
-	"cloudwegodemo/cmd/cloudwegodemo/internal/server"
+	"cloudwegodemo/pkg"
 
+	"cloudwegodemo/internal/server"
+
+	"cloudwegodemo/pkg/bootstrap"
 	"cloudwegodemo/pkg/configor"
+	"cloudwegodemo/pkg/contrib/registry"
 	"cloudwegodemo/pkg/database"
 
 	"github.com/google/wire"
 )
 
+var (
+	commonProvder = wire.NewSet(registry.NewRegistry)
+)
+
 // wireApp init application.
-func wireApp(*configor.Option) (*APP, func(), error) {
-	panic(wire.Build(config.ConfigProvider, database.DatabaseProvider, repo.RepoProvider, biz.BizProvider, server.ServerProvider, newApp))
+func wireApp(pkg.ServiceName, *configor.Option) (*bootstrap.APP, func(), error) {
+	panic(wire.Build(commonProvder, config.ConfigProvider, database.DatabaseProvider, repo.RepoProvider, biz.BizProvider, server.ServerProvider, newApp))
 }

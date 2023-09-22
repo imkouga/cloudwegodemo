@@ -11,7 +11,7 @@ init:
 common:	
 	protoc 	\
 		--proto_path=. \
-		--proto_path=./third_party \
+		--proto_path=./pkg/pb \
 		--go_out=paths=source_relative:. \
 		$(shell find pkg -name *.proto) \
 		
@@ -27,10 +27,15 @@ cloudwegodemo:
 		-I pkg \
 		-idl $(shell find idl/$(HZ) -name *.proto) \
 	
+# protoc 	\
+	# 	--proto_path=. \
+	# 	--go_out=paths=source_relative:. \
+	# 	$(shell find cmd/$(HZ) -name *.proto) \
+
 	protoc 	\
 		--proto_path=. \
 		--go_out=paths=source_relative:. \
-		$(shell find cmd/$(HZ) -name *.proto) \
+		$(shell find internal -name *.proto) \
 		
 	rm -rf main.go router_gen.go router.go
 			

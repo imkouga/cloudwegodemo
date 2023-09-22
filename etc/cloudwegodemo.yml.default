@@ -3,7 +3,12 @@ server:
     addr: 0.0.0.0:8020
   rpc:
     addr: 0.0.0.0:9020
-    
+
+registry:
+  enabled: true
+  endpoints:
+  - 172.18.154.56:2379 
+   
 database:
   mysql:
     dsn: xxxx

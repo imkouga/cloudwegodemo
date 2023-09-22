@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package cmd.cloudwegodemo.internal.server;
+
+option go_package = "cloudwegodemo/cmd/cloudwegodemo/internal/server";
+
+message HTTPOption {
+    string addr = 1;
+}
+
+message RPCOption {
+    string addr = 1;
+}
